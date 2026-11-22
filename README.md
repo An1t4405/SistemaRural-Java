@@ -1,44 +1,42 @@
-# SistemaRural-PE (versión Java)
+# SistemaRural-PE · Java
 
-Módulo de software de código abierto para digitalizar el registro de pacientes, historias clínicas, citas, turnos y reportes de una
-posta médica rural. **Java 17 + Swing + Maven**, sin librerías externas (solo JUnit 5 para las pruebas).
+Versión de escritorio en **Java 17+ y Swing**, desarrollada tomando como referencia el proyecto Python `SistemaRural-PE-SOLO-BUSCAR-DNI`. Conserva los módulos funcionales y reglas de negocio descritos en ese proyecto, con clases auxiliares separadas para validaciones y exportación XLSX.
 
-## Abrir y ejecutar en Apache NetBeans
-Requisitos: **JDK 17 o superior** (NetBeans → *Tools → Java Platforms* para verificar) e internet la primera vez (Maven descarga JUnit).
+## Ejecutar en Windows
+1. Instalar JDK 17 o superior.
+2. Descomprimir el ZIP.
+3. Abrir la carpeta `SistemaRural-PE-Java`.
+4. Ejecutar `ejecutar.bat`.
 
-1. *File → Open Project…* y elija la carpeta `SistemaRural-PE-Java` (se reconoce por el ícono de Maven).
-2. Espere a que NetBeans termine de cargar (barra de progreso abajo a la derecha).
-3. **Datos de ejemplo (opcional):** en *Projects → Source Packages → pe.sistemarural*, clic derecho en `CargarDemo.java` → *Run File* (Shift+F6).
-4. **Abrir el sistema:** clic derecho en el proyecto → *Run* (F6), o clic derecho en `Main.java` → *Run File*.
-5. **Pruebas automáticas:** clic derecho en el proyecto → *Test* (Alt+F6). Los resultados salen en la ventana *Test Results*.
-6. **Evidencia de CE-01 y RD-03:** clic derecho en `MedicionRecursos.java` → *Run File*.
-
-Los archivos `datos.enc` y `clave.key` se crean en la carpeta del proyecto. **Sin `clave.key` no se pueden recuperar los datos**:
-respáldelos y no los suba a GitHub (ya están en `.gitignore`). Todos los datos de ejemplo son **ficticios**.
-
-## Estructura (trazabilidad con el informe)
-| Paquete / clase | Contenido | Requisito |
-|---|---|---|
-| `seguridad.Cifrador`, `seguridad.Dni` | Cifrado AES-256-GCM, hash HMAC del DNI, enmascarado | RD-02, DM-01, DM-05 |
-| `modelo` | `Persona` (abstracta), `Paciente`, `Medico`, `HistoriaClinica`, `Atencion`, `AgendaMedica`, `Cita`, `Ticket`, **`GeneradorTurnos` (Singleton)** | DD-01, RF-01 a RF-05 |
-| `reportes` | `Reporte` (abstracta), Diario/Semanal/Mensual, **`ReporteFactory`** (streams: filter/map/reduce) | DD-02, RF-06 |
-| `servicio.ServicioClinica` | Operaciones del sistema + persistencia cifrada | RF-01 a RF-06 |
-| `ui.VentanaPrincipal` | Swing: solo handlers de eventos que delegan al servicio | DD-03, RD-04 |
-| `src/test/.../ServicioClinicaTest` | JUnit 5 | CE-01, CE-02, CE-03 |
-
-## Paradigmas
-- **POO**: clases con atributos privados y getters/setters; herencia, composición, agregación.
-- **Funcional**: reportes y búsquedas con `Stream` (`filter`, `map`, `reduce`) y lambdas, sin modificar las historias.
-- **Eventos**: Swing con `ActionListener` (handlers `on...`) y un `try/catch` central en `ejecutar()`.
-
-## Documentos de apoyo para el informe
-- `docs/criterios_aceptacion_GUI.md`: componente → evento → criterio → prueba (Tema 5.3).
-- `docs/calidad_codigo_y_SOLID.md`: SOLID, buenas prácticas, funciones de orden superior y reflexión sobre usuarios ([1.5]).
-- `docs/resultado_pruebas.txt`: resultado de la ejecución de las pruebas (evidencia de pruebas automatizadas).
-
-## Subir el repositorio a GitHub (debe ser público)
+Compilación manual:
+```bat
+javac -encoding UTF-8 -d target/classes src/main/java/pe/sistemarural/*.java
+java -cp target/classes pe.sistemarural.App
 ```
-git remote add origin https://github.com/SU_USUARIO/SistemaRural-PE.git
-git branch -M main
-git push -u origin main
+
+## Módulos y funcionalidades
+- Inicio de sesión, creación del primer administrador, cambio obligatorio de contraseña temporal y cierre de sesión.
+- Contraseñas PBKDF2-HMAC-SHA256 con sal aleatoria, bloqueo de cuenta tras cinco intentos fallidos y gestión de usuarios.
+- Roles y permisos administrativos/asistenciales: ADMIN, JEFE, ADMISION, ESTADISTICA, MEDICO, OBSTETRA, ENFERMERA, ODONTOLOGO, PSICOLOGO, NUTRICIONISTA, TEC_ENFERMERIA, TEC_LABORATORIO y TEC_FARMACIA. ADMIN no accede a historias clínicas; Enfermería y demás roles conservan la matriz de permisos del proyecto Python.
+- Pacientes: registro y actualización, DNI de 8 dígitos o Carné de Extranjería de 9–12 caracteres, búsqueda exclusiva por DNI, selección/carga de registros, tabla con documentos enmascarados y limpieza de formulario.
+- Historias clínicas: alergias, antecedentes y atenciones con fecha, motivo, CMP y validación de código CIE-10.
+- Profesionales de salud: registro por DNI, nombres, apellidos, CMP, especialidad y teléfono.
+- Citas: lunes a sábado, hasta 90 días, bloques de 30 minutos de 08:00–12:00 y 14:00–18:00, control de citas pasadas, cruces de paciente/profesional y cupos por turno.
+- Turnos y tickets: emisión correlativa por fecha, cancelación y estados RESERVADO, EN_ATENCION, COMPLETADO, NO_ASISTIO y CANCELADA; «No asistió» solo desde el inicio de la cita. Las citas pasadas sin cambio manual se muestran como vencidas, sin alterar su estado automáticamente.
+- Reportes diario, semanal y mensual con total de atenciones y top 5 diagnósticos CIE-10.
+- Exportación de reportes a **Excel `.xlsx` real** (hojas Resumen, Pacientes y Citas), resumen TXT y ficha individual Excel (Paciente, Atenciones y Citas). Los documentos se exportan enmascarados.
+- Persistencia cifrada AES-256-GCM y carpetas de exportación creadas automáticamente.
+
+## Pruebas
+Compilar y ejecutar las pruebas básicas incluidas:
+```bat
+javac -encoding UTF-8 -d target/classes src/main/java/pe/sistemarural/*.java src/test/java/pe/sistemarural/*.java
+java -cp target/classes pe.sistemarural.SmokeTests
 ```
+
+Las pruebas Java incluidas cubren validaciones de DNI/CE, fechas reales, CIE-10, horarios y la estructura OOXML del archivo XLSX. El proyecto Python de referencia dispone de su propia batería de 86 pruebas; ese resultado no se atribuye a Java. La interfaz Swing debe probarse en el equipo Windows donde se ejecutará.
+
+## Datos y compatibilidad
+Al iniciar se crea `datos/` con `datos-java.enc` y `clave-java.key`. **Conserve ambos archivos juntos y haga copias de seguridad.** La versión Java utiliza un formato de almacenamiento propio: no abre automáticamente `datos.enc`/`clave.key` del proyecto Python y no debe sustituir esos archivos. Para pasar registros de una instalación Python, exporte los datos desde Python y realice una migración controlada; no copie la clave ni el archivo cifrado de un sistema al otro.
+
+Las exportaciones se guardan en `datos/exportaciones/`. No use datos reales en pruebas; el proyecto de referencia utiliza datos ficticios.

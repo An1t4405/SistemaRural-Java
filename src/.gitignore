@@ -1,0 +1,6 @@
+clave.key
+datos.enc
+*.tmp
+__pycache__/
+.pytest_cache/
+datos/

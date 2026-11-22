@@ -1,7 +1,3 @@
 target/
-nbproject/private/
-nbactions.xml
-clave.key
-datos.enc
-*.tmp
+datos/
 *.class
